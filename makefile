@@ -30,7 +30,7 @@ include make/libraries
 ##
 # Set default compiler options.
 ##
-CFLAGS = -I . -isystem $(EIGEN) -isystem $(BOOST) -Wall -DBOOST_RESULT_OF_USE_TR1 -DBOOST_NO_DECLTYPE -DBOOST_DISABLE_ASSERTS -pipe -I$(CVODE)/include
+CFLAGS = -I . -isystem $(EIGEN) -isystem $(BOOST) -isystem$(CVODES)/include -Wall -DBOOST_RESULT_OF_USE_TR1 -DBOOST_NO_DECLTYPE -DBOOST_DISABLE_ASSERTS -DNO_FPRINTF_OUTPUT -pipe
 CFLAGS_GTEST = -DGTEST_USE_OWN_TR1_TUPLE
 LDLIBS =
 EXE =
@@ -105,15 +105,24 @@ endif
 	@echo ''
 	@echo '  Header tests'
 	@echo '  - test-headers  : tests all source headers to ensure they are compilable and'
-	@echo '                     include enough header files.'
+	@echo '                    include enough header files.'
 	@echo ''
 	@echo '  To run a single header test, add "-test" to the end of the file name.'
 	@echo '  Example: make stan/math/constants.hpp-test'
+	@echo ''
+	@echo '  - test-math-dependencies : walks through all the header files and indicates'
+	@echo '      when the math dependencies are violated. Dependencies should follow:'
+	@echo '      * rev -> prim'
+	@echo '      * fwd -> prim'
+	@echo '      * mix -> {rev, fwd, prim}'
+	@echo '      * within {prim, rev, fwd, mix}: mat -> arr -> scal'
 	@echo ''
 	@echo '  Cpplint'
 	@echo '  - cpplint       : runs cpplint.py on source files. requires python 2.7.'
 	@echo '                    cpplint is called using the CPPLINT variable:'
 	@echo '                      CPPLINT = $(CPPLINT)'
+	@echo '                    To set the version of python 2, set the PYTHON2 variable:'
+	@echo '                      PYTHON2 = $(PYTHON2)'
 	@echo ''
 	@echo 'Documentation:'
 	@echo '  Doxygen'
@@ -141,6 +150,7 @@ clean:
 	@echo '  removing test executables'
 	$(shell find test -type f -name "*_test$(EXE)" -exec rm {} +)
 	$(shell find test -type f -name "*_test.d" -exec rm {} +)
+	$(shell find test -type f -name "*_test.d.*" -exec rm {} +)
 	$(shell find test -type f -name "*_test.xml" -exec rm {} +)
 
 clean-doxygen:
@@ -149,10 +159,11 @@ clean-doxygen:
 clean-deps:
 	@echo '  removing dependency files'
 	$(shell find . -type f -name '*.d' -exec rm {} +)
+	$(shell find . -type f -name '*.d.*' -exec rm {} +)
 	$(RM) $(shell find stan -type f -name '*.dSYM') $(shell find stan -type f -name '*.d.*')
 
 clean-all: clean clean-doxygen clean-deps
 	@echo '  removing generated test files'
 	$(shell find test/prob -name '*_generated_*_test.cpp' -type f -exec rm {} +)
 	$(RM) $(wildcard test/gtest.o test/libgtest* test/prob/generate_tests$(EXE))
-	$(RM) $(wildcard $(CVODE)/lib/*)
+	$(RM) $(wildcard $(CVODES)/lib/*)
